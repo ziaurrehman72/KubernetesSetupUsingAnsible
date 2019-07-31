@@ -1,9 +1,12 @@
 - hosts: master
   vars:
 
-  tasks:
-    - name: Download and install kubectl
-      get_url:
-        url:
-        dest: /etc/foo.conf
-        mode: '0440'
+  roles:
+    - download-artifacts
+    - setup-kube-master
+
+- hosts: worker
+  vars:
+
+  roles:
+    - setup-kube-worker
