@@ -1,2 +1,2 @@
-- name: Rrestart_system
+- name: restart_system
   command: reboot

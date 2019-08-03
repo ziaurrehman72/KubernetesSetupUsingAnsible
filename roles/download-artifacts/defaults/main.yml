@@ -1,3 +1,5 @@
 ---
 # defaults file for download-artifacts
-kubectl: 
+kubectl:
+enablenightly: true
+defaultimage: hello-world

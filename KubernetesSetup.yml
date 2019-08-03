@@ -2,29 +2,7 @@
   gather_facts: no
   vars:
 
-  pre_tasks:
-    # - name: Check whether swap is desabled
-    #   command: swapoff -a
-
-
-    - name: Comment swap in fstab
-      replace:
-        path: /etc/fstab
-        regexp: '^(.+?\sswap\s+sw\s+.*)$'
-        replace: '# \1'
-      notify: restart_system
-
-
-    # - name: Read UUID
-    #   slurp:
-    #     src: /sys/class/dmi/id/product_uuid
-    #   register: uuids
-    #   loop: "{{    }}"
-
-  handlers:
-    - name: restart_system
-      debug:
-        msg: "handler"
+  # pre_tasks:
 
 
   tasks:

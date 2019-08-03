@@ -1,2 +1,87 @@
 ---
 # tasks file for download-artifacts
+
+#Disable the Swap
+- name: Check whether swap is desabled
+  command: swapoff -a
+
+
+- name: Comment swap in fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^(.+? sswap s+sw s+.*)$'
+    replace: '#  1'
+  notify: restart_system
+
+#install docker
+- name: Remove old packages to prepare for Docker installation
+  yum:
+    name: "{{  item  }}"
+    state: removed
+  loop:
+    - docker
+    - docker-client
+    - docker-client-latest
+    - docker-common
+    - docker-latest
+    - docker-latest-logrotate
+    - docker-logrotate
+    - docker-engine
+
+
+- name: Install yum updates
+  yum: update_cache=yes
+  when: ansible_os_family == "RedHat
+
+
+- name: Install Utilities required for Docker
+  yum:
+    name: "{{  item  }}"
+    state: latest
+  loop:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    # - docker.io
+
+
+- name: Add Docker stable yum repository
+  yum_repository:
+    name: DockerRepo
+    description: Docker YUM repo
+    baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+
+
+- name: Enable nighly repos for Docker
+  yum_repository:
+    name: "{{  item  }}"
+    enabled: yes
+  loop:
+    - docker-ce-nightly
+    - docker-ce-test
+  when: enablenightly
+
+
+- name: Install Docker
+  yum:
+    name: "{{  item  }}"
+    state: latest
+  loop:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+
+- name: Start Docker
+  service:
+    name: docker
+    state: started
+
+
+- name: Verify Docker installation
+  command: docker --version
+  register: dockerversion
+  changed_when: dockerversion
+
+
+
+- name:
