@@ -1,0 +1,4 @@
+---
+# handlers file for install-kube
+- name: restart_system
+  command: reboot now

@@ -1,15 +1,20 @@
-- hosts: masternodes
-  gather_facts: no
+- hosts: masternode
+  check_mode: yes
+# , workernodes
+  # gather_facts: no
   vars:
-
   # pre_tasks:
-
 
   tasks:
 
   roles:
-    - download-artifacts
-    - setup-kube-master
+    - install-kube
+
+# - hosts: masternodes
+#   vars:
+#
+#   roles:
+#     - setup-kube-master
 
 # - hosts: workernodes
 #   vars:

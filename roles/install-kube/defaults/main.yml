@@ -1,5 +1,5 @@
 ---
-# defaults file for download-artifacts
+# defaults file for install-
 kubectl:
 enablenightly: true
 tempdir: /tmp/tempKubes
