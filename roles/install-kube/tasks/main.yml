@@ -12,8 +12,8 @@
 - name: Disable swap
   command: swapoff -a
   register: swapstatus
-  failed_when: swapstatus.stdout is not defined
-  changed_when: swapstatus.stdout is defined and swapstatus |length > 0
+  # failed_when: swapstatus.stdout is defined and swapstatus |length > 0
+  # changed_when: swapstatus.stdout is not defined or (swapstatus.stdout is defined and swapstatus.stdout == '')
 
 
 - name: Comment swap in fstab
@@ -23,34 +23,28 @@
     replace: '#  1'
   notify: restart_system
 
-#install docker
-- name: Remove old packages to prepare for Docker installation
-  yum:
-    name: "{{  item  }}"
-    state: removed
-  loop:
-    - docker
-    - docker-client
-    - docker-client-latest
-    - docker-common
-    - docker-latest
-    - docker-latest-logrotate
-    - docker-logrotate
-    - docker-engine
 
+#install docker
+# - name: Remove old packages to prepare for Docker installation
+#   yum:
+#     name: "{{  item  }}"
+#     state: removed
+#   loop:
+#     - docker
+#     - docker-client
+#     - docker-client-latest
+#     - docker-common
+#     - docker-latest
+#     - docker-latest-logrotate
+#     - docker-logrotate
+#     - docker-engine
+#     - docker-selinux
 
 
 - name: Install yum updates
   yum: update_cache=yes
   when: ansible_os_family == "RedHat"
 
-
-# - name: Add Docker stable yum repository
-#   yum_repository:
-#     name: DockerRepo
-#     description: Docker YUM repo
-#     baseurl: https://download.docker.com/linux/centos/docker-ce.repo
-#
 
 - name: Install Utilities required for Docker
   yum:
@@ -60,32 +54,6 @@
     - yum-utils
     - device-mapper-persistent-data
     - lvm2
-    # - docker.io
-
-
-# - name: Add Docker repo
-#   get_url:
-#     url: https://download.docker.com/linux/centos/docker-ce.repo
-#     dest: /etc/yum.repos.d/docer-ce.repo
-#   become: yes
-#
-# - name: Enable Docker Edge repo
-#   ini_file:
-#     dest: /etc/yum.repos.d/docer-ce.repo
-#     section: 'docker-ce-edge'
-#     option: enabled
-#     value: 0
-#   become: yes
-
-
-# - name: Enable nighly repos for Docker
-#   yum_repository:
-#     name: "{{  item  }}"
-#     enabled: yes
-#   loop:
-#     - docker-ce-nightly
-#     - docker-ce-test
-#   when: enablenightly
 
 
 - name: Install Docker
@@ -93,9 +61,8 @@
     name: "{{  item  }}"
     state: latest
   loop:
-    - docker-ce-18.06
-    - docker-ce-cli
-    - containerd.io
+    - docker
+
 
 - name: Start Docker
   service:
@@ -110,8 +77,6 @@
   failed_when: dockerversion.stdout | length <= 0
 
 
-
-
 - name: Add Kubernetes yum repository
   yum_repository:
     name: kubernetes
@@ -120,9 +85,14 @@
     gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     enabled: yes
 
+
 - name: Disable SELinux
   selinux:
+    policy: targeted
     state: permissive
+
+# - fail:
+#     msg: "Getting a pause...."
 
 
 - name: Install Kubernetes
@@ -147,5 +117,6 @@
   file:
     path: "{{  tempdir  }}"
     state: absent
+
 
 # - name:

@@ -1,14 +1,23 @@
-- hosts: masternode
-  check_mode: yes
-# , workernodes
-  # gather_facts: no
+- hosts: all
+  # check_mode: yes
+  gather_facts: no
+
   vars:
   # pre_tasks:
 
+# all the tasks that need to be run on all the servers including nodes and the master
   tasks:
+   - name: Check out the disk space
+     command: df -h
+     register: disks
+       
+   - debug:
+       msg: "{{ disks }}"
+    
+    
 
   roles:
-    - install-kube
+    # - install-kube
 
 # - hosts: masternodes
 #   vars:
