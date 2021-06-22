@@ -1,0 +1,156 @@
+- hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+     debug: false
+     kubernetes_archive_key: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+
+# all the tasks that need to be run on all the servers including nodes and the master
+  tasks:
+   - name: Check out the disk space
+     command: df -h
+     register: disks
+     when: debug
+       
+
+   - debug:
+       msg: "{{ disks }}"
+     when: debug
+
+
+   - name: Check whether br_netfilter module is loaded
+     ansible.builtin.shell: "lsmod "
+     register: br_netfilter_loading_status
+
+   - debug:
+       msg: "{{ br_netfilter_loading_status }}"
+     when: debug
+
+
+   - name: Load br_netfilter module
+     command: modprobe br_netfilter
+     register: output_br_netfilter
+     when: "'br_netfilter' not in br_netfilter_loading_status.stdout"
+     failed_when: 
+         - output_br_netfilter.stderr != ""
+     changed_when: 
+         - output_br_netfilter.rc == 0
+
+
+   - name: Make sure iptables can see bridged traffic
+     ansible.posix.sysctl:
+        name: "{{  item  }}"
+        value: '1'
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/k8s.conf
+     loop:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+
+
+   - name: Update apt-get repo and cache
+     apt: 
+        update_cache: true
+        force_apt_get: true
+        cache_valid_time: 3600
+        
+
+   - name: Remove older docker versions if present
+     apt:
+       pkg: '{{item}}'
+       state: absent
+     with_items:
+       - docker
+       - docker-engine
+
+
+   - name: Ensure packages to allow apt to use repository over HTTPS
+     apt:
+      name: "{{ item }}"
+      state: present
+     with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+
+   - name: Add Docker's official apt key.
+     apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+      state: present
+     register: add_key
+
+
+   - name: Add Docker apt key if failed
+     shell: "curl -sSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+     args:
+       warn: no
+     when: add_key.failed  
+
+   - name: Add Docker stable repository.
+     apt_repository:
+       repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+       state: present
+       update_cache: yes
+
+
+   - name: Update apt-get repo and cache
+     apt: 
+        update_cache: true
+        force_apt_get: true
+        cache_valid_time: 3600
+
+
+   - name: Install Docker
+     apt:
+       name: docker.io
+       state: present
+
+
+   - name: Download the Google Cloud public signing key      
+     get_url:
+       url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+       dest: "{{  kubernetes_archive_key  }}"
+
+
+   - name: Add the Kubernetes apt repository
+     ansible.builtin.apt_repository:
+       repo: "deb [signed-by={{ kubernetes_archive_key }}] https://apt.kubernetes.io/ kubernetes-xenial main"
+       state: present
+       filename: kubernetes
+
+   - name: Update apt-get repo and cache
+     apt: 
+        update_cache: true
+        force_apt_get: true
+        cache_valid_time: 3600
+
+   - name: Install kubelet, kubeadm and kubectl
+     apt:
+      name: "{{ item }}"
+      state: present
+     with_items:
+      - kubelet 
+      - kubeadm
+      - kubectl
+
+
+  roles:
+    # - install-kube
+
+# - hosts: masternodes
+#   vars:
+#
+#   roles:
+#     - setup-kube-master
+
+# - hosts: workernodes
+#   vars:
+#
+#   roles:
+#     - setup-kube-worker
