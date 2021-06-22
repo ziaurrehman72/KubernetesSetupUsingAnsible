@@ -138,6 +138,7 @@
       - kubelet 
       - kubeadm
       - kubectl
+
       
 
   roles:
