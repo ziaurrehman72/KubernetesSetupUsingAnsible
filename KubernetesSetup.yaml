@@ -138,8 +138,7 @@
       - kubelet 
       - kubeadm
       - kubectl
-
-
+      
 
   roles:
     # - install-kube
